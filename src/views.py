@@ -185,3 +185,5 @@ def get_currency_rates() -> List[Dict[str, Any]]:
 for transaction in get_top_transactions(data, 10):
     print(transaction)
 
+
+
