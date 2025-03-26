@@ -36,6 +36,10 @@ tzlocal = "^5.3.1"
 pytest = "^8.3.5"
 pytest-cov = "^6.0.0"
 
+
+[tool.poetry.group.finance.dependencies]
+finnhub-python = "^2.4.23"
+
 [tool.mypy]
 disallow_untyped_defs = true
 no_implicit_optional = true
