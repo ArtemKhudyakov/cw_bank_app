@@ -1,7 +1,8 @@
 # import pandas as pd
 import json
 from datetime import UTC, datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Hashable
+import src.external_api as external_api
 
 import pytz
 from tzlocal import get_localzone
@@ -152,7 +153,7 @@ def process_cards(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 print(process_cards(data))
 
 
-def get_top_transactions(transactions: List[Dict[str, Any]], n: int = 5) -> List[Dict[str, Any]]:
+def get_top_transactions(transactions: List[Dict[str, Any]], n: int = 5) -> List[Dict[Hashable, Any]]:
     """Возвращает топ-N транзакций по сумме."""
     valid_transactions = [
         t for t in transactions if isinstance(t.get("Сумма операции"), (int, float)) and t.get("Сумма операции", 0) < 0
@@ -173,10 +174,36 @@ def get_top_transactions(transactions: List[Dict[str, Any]], n: int = 5) -> List
     return top_transactions
 
 
-def get_currency_rates() -> List[Dict[str, Any]]:
-    """Возвращает курсы валют (заглушка)."""
-    return [{"currency": "USD", "rate": 73.21}, {"currency": "EUR", "rate": 87.08}]
+def get_currency_rates(currencies = ('USD', 'EUR', 'CNY')) -> Optional[List[Dict[str, Any]] | Any]:
+    """Возвращает актуальные курсы валют по отношению к рублю"""
+    exchange_rates = external_api.get_exchange_rates("rub", currencies)
+    result = []
+    if exchange_rates:
+        for currency in exchange_rates:
+            exchange_rate_to_rub = {currency['currency']: currency['exchange_rate']}
+            result.append(exchange_rate_to_rub)
+        return result
+    else:
+        return None
+
+
+def get_stock_prices() -> List[Dict[str, Any]]:
+    """Возвращает цены акций (заглушка)."""
+    return [
+        {"stock": "AAPL", "price": 150.12},
+        {"stock": "AMZN", "price": 3173.18},
+        {"stock": "GOOGL", "price": 2742.39},
+        {"stock": "MSFT", "price": 296.71},
+        {"stock": "TSLA", "price": 1007.08}]
+
+
 
 
 for transaction in get_top_transactions(data, 10):
     print(transaction)
+currency_rate = get_currency_rates()
+if currency_rate:
+    for i in get_currency_rates():
+        print(i)
+else:
+    print(currency_rate)
