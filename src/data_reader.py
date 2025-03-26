@@ -5,7 +5,9 @@ from typing import Any, Dict, Hashable, List
 import pandas as pd
 
 
-def xlsx_reader(path_to_xlsx_file: str = "data/operations.xlsx",) -> List[Dict[Hashable, Any]]:
+def xlsx_reader(
+    path_to_xlsx_file: str = "data/operations.xlsx",
+) -> List[Dict[Hashable, Any]]:
     """Функция принимает путь до файла данных формата xlsx, и возвращает список
     словарей"""
     current_file_path = p.Path(__file__).resolve()
@@ -18,6 +20,3 @@ def xlsx_reader(path_to_xlsx_file: str = "data/operations.xlsx",) -> List[Dict[H
     except FileNotFoundError:
         print("File not found")
         raise FileNotFoundError
-
-
-

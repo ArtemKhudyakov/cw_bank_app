@@ -1,10 +1,12 @@
-import src.data_reader as data_reader
 # import pandas as pd
 import json
+from datetime import UTC, datetime
+from typing import Any, Dict, List
+
 import pytz
-from datetime import datetime, UTC
 from tzlocal import get_localzone
-from typing import List, Dict, Any
+
+import src.data_reader as data_reader
 
 data = data_reader.xlsx_reader("data/operations.xlsx")
 
@@ -91,7 +93,6 @@ def get_current_time() -> str:
         current_time = datetime.now(local_tz)
         time = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
-
     except Exception as e:
         # Если что-то пошло не так, возвращаем UTC время
         print(f"Ошибка определения зоны: {e}. Используется UTC.")
@@ -128,7 +129,7 @@ def process_cards(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     amount = None
     for transaction in transactions:
         card = transaction.get("Номер карты", "")
-        if card == 'nan' or not card:
+        if card == "nan" or not card:
             continue
 
         last_digits = card[-4:] if len(str(card)) >= 4 else card
@@ -138,11 +139,7 @@ def process_cards(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             0
 
         if last_digits not in cards:
-            cards[last_digits] = {
-                "last_digits": last_digits,
-                "total_spent": 0.0,
-                "cashback": 0.0
-            }
+            cards[last_digits] = {"last_digits": last_digits, "total_spent": 0.0, "cashback": 0.0}
 
         cards[last_digits]["total_spent"] += amount
         cashback = transaction.get("Бонусы (включая кэшбэк)", 0)
@@ -158,32 +155,28 @@ print(process_cards(data))
 def get_top_transactions(transactions: List[Dict[str, Any]], n: int = 5) -> List[Dict[str, Any]]:
     """Возвращает топ-N транзакций по сумме."""
     valid_transactions = [
-        t for t in transactions
-        if isinstance(t.get("Сумма операции"), (int, float)) and t.get("Сумма операции", 0) < 0
+        t for t in transactions if isinstance(t.get("Сумма операции"), (int, float)) and t.get("Сумма операции", 0) < 0
     ]
 
     sorted_transactions = sorted(valid_transactions, key=lambda x: abs(x["Сумма операции"]), reverse=True)[:n]
 
     top_transactions = []
     for t in sorted_transactions:
-        top_transactions.append({
-            "date": t.get("Дата операции", "").split()[0],
-            "amount": abs(t.get("Сумма операции", 0)),
-            "category": t.get("Категория", ""),
-            "description": t.get("Описание", "")
-        })
+        top_transactions.append(
+            {
+                "date": t.get("Дата операции", "").split()[0],
+                "amount": abs(t.get("Сумма операции", 0)),
+                "category": t.get("Категория", ""),
+                "description": t.get("Описание", ""),
+            }
+        )
+    return top_transactions
+
 
 def get_currency_rates() -> List[Dict[str, Any]]:
     """Возвращает курсы валют (заглушка)."""
-    return [
-        {"currency": "USD", "rate": 73.21},
-        {"currency": "EUR", "rate": 87.08}
-    ]
+    return [{"currency": "USD", "rate": 73.21}, {"currency": "EUR", "rate": 87.08}]
 
 
-    return top_transactions
 for transaction in get_top_transactions(data, 10):
     print(transaction)
-
-
-
