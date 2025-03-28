@@ -1,15 +1,12 @@
-# import pandas as pd
 import json
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Hashable
 import src.external_api as external_api
 
-import pytz
 from tzlocal import get_localzone
 
 import src.data_reader as data_reader
 
-data = data_reader.xlsx_reader("data/operations.xlsx")
 
 # data_dict = [
 #     {
@@ -119,14 +116,9 @@ def get_greeting() -> str:
         return "Доброй ночи"
 
 
-print(get_current_time())
-print(get_greeting())
-
-
-def process_cards(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def process_cards(transactions: List[Dict[Hashable, Any]]) -> List[Dict[Hashable, Any]]:
     """Обрабатывает данные по картам."""
     cards = {}
-    # amount = None
     for transaction in transactions:
         card = transaction.get("Номер карты", "")
         if card == "nan" or not card:
@@ -149,10 +141,7 @@ def process_cards(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return list(cards.values())
 
 
-print(process_cards(data))
-
-
-def get_top_transactions(transactions: List[Dict[str, Any]], n: int = 5) -> List[Dict[Hashable, Any]]:
+def get_top_transactions(transactions: List[Dict[Hashable, Any]], n: int = 5) -> List[Dict[Hashable, Any]]:
     """Возвращает топ-N транзакций по сумме."""
     valid_transactions = [
         t for t in transactions if isinstance(t.get("Сумма операции"), (int, float)) and t.get("Сумма операции", 0) < 0
@@ -162,9 +151,11 @@ def get_top_transactions(transactions: List[Dict[str, Any]], n: int = 5) -> List
 
     top_transactions = []
     for t in sorted_transactions:
+        date_str = t.get("Дата операции", "")
+        date = date_str.split()[0] if date_str else ""
         top_transactions.append(
             {
-                "date": t.get("Дата операции", "").split()[0],
+                "date": date,
                 "amount": abs(t.get("Сумма операции", 0)),
                 "category": t.get("Категория", ""),
                 "description": t.get("Описание", ""),
@@ -193,16 +184,20 @@ def get_stock_prices(resource = "finnhub", tickers = ('MSFT', 'AAPL', 'TSLA')) -
         data = external_api.get_stock_rates_finnhub(tickers)
         stock_prices = []
         for ticker in data:
-            ticker_price = {}
-            ticker_price[ticker["ticker"]] = ticker["current_price"]
-            stock_prices.append(ticker_price)
+            try:
+                ticker_price = {
+                    ticker["ticker"]: ticker.get("current_price", None)
+                }
+                stock_prices.append(ticker_price)
+            except KeyError:
+                continue  # Пропускаем записи без тикера
         return stock_prices
 
 
-
-def main():
+def main_page():
     """Главная функция, обрабатывающая данные и возвращающая JSON-ответ"""
     # Парсим входные данные, если они в формате строки
+    data = data_reader.xlsx_reader("data/operations.xlsx")
     greeting = get_greeting()
     cards = process_cards(data)
     top_transactions = get_top_transactions(data, 5)
@@ -220,18 +215,4 @@ def main():
     return json.dumps(response, ensure_ascii=False, indent=4)
 
 
-for transaction in get_top_transactions(data, 5):
-    print(transaction)
-currency_rate = get_currency_rates()
-if currency_rate:
-    for i in get_currency_rates():
-        print(i)
-else:
-    print(currency_rate)
-stock_prices = get_stock_prices()
-if stock_prices:
-    for i in stock_prices:
-        print(i)
-
-print("#####")
-print(main())
+print(main_page())
