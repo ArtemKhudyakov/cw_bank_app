@@ -1,15 +1,23 @@
-from unittest.mock import patch, Mock
-from datetime import datetime
-from src.views import get_current_time, get_greeting, process_cards, \
-    get_top_transactions, get_currency_rates, get_stock_prices, main_page
-import pytest
 import json
-from typing import List, Dict, Any
+from datetime import datetime
+from unittest.mock import Mock, patch
+
+import pytest
+
+from src.views import (
+    get_currency_rates,
+    get_current_time,
+    get_greeting,
+    get_stock_prices,
+    get_top_transactions,
+    main_page,
+    process_cards
+)
 
 
 def test_get_current_time_format():
     """Тест формата возвращаемого времени"""
-    with patch('src.views.datetime') as mock_datetime:
+    with patch("src.views.datetime") as mock_datetime:
         test_time = datetime(2023, 12, 25, 15, 30, 45)
         mock_datetime.now.return_value = test_time
         result = get_current_time()
@@ -18,7 +26,7 @@ def test_get_current_time_format():
 
 def test_get_current_time_uses_current_time():
     """Тест использования текущего времени"""
-    with patch('src.views.datetime') as mock_datetime:
+    with patch("src.views.datetime") as mock_datetime:
         test_time = datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.now.return_value = test_time
         result = get_current_time()
@@ -27,46 +35,44 @@ def test_get_current_time_uses_current_time():
 
 def test_greeting_morning():
     """Тест для утреннего приветствия (5:00-11:59)"""
-    with patch('src.views.get_current_time',
-               return_value="2023-01-01 08:30:00"):
+    with patch("src.views.get_current_time", return_value="2023-01-01 08:30:00"):
         assert get_greeting() == "Доброе утро"
 
 
 def test_greeting_afternoon():
     """Тест для дневного приветствия (12:00-16:59)"""
-    with patch('src.views.get_current_time',
-               return_value="2023-01-01 14:15:00"):
+    with patch("src.views.get_current_time", return_value="2023-01-01 14:15:00"):
         assert get_greeting() == "Добрый день"
 
 
 def test_greeting_evening():
     """Тест для вечернего приветствия (17:00-22:59)"""
-    with patch('src.views.get_current_time',
-               return_value="2023-01-01 19:45:00"):
+    with patch("src.views.get_current_time", return_value="2023-01-01 19:45:00"):
         assert get_greeting() == "Добрый вечер"
 
 
 def test_greeting_night():
     """Тест для ночного приветствия (23:00-4:59)"""
-    with patch('src.views.get_current_time',
-               return_value="2023-01-01 03:20:00"):
+    with patch("src.views.get_current_time", return_value="2023-01-01 03:20:00"):
         assert get_greeting() == "Доброй ночи"
 
 
-@pytest.mark.parametrize("time_str, expected", [
-    ("04:59:59", "Доброй ночи"),
-    ("05:00:00", "Доброе утро"),
-    ("11:59:59", "Доброе утро"),
-    ("12:00:00", "Добрый день"),
-    ("16:59:59", "Добрый день"),
-    ("17:00:00", "Добрый вечер"),
-    ("22:59:59", "Добрый вечер"),
-    ("23:00:00", "Доброй ночи"),
-])
+@pytest.mark.parametrize(
+    "time_str, expected",
+    [
+        ("04:59:59", "Доброй ночи"),
+        ("05:00:00", "Доброе утро"),
+        ("11:59:59", "Доброе утро"),
+        ("12:00:00", "Добрый день"),
+        ("16:59:59", "Добрый день"),
+        ("17:00:00", "Добрый вечер"),
+        ("22:59:59", "Добрый вечер"),
+        ("23:00:00", "Доброй ночи"),
+    ],
+)
 def test_greeting_boundary_times(time_str, expected):
     """Параметризованный тест граничных значений"""
-    with patch('src.views.get_current_time',
-               return_value=f"2023-01-01 {time_str}"):
+    with patch("src.views.get_current_time", return_value=f"2023-01-01 {time_str}"):
         assert get_greeting() == expected, f"Ошибка для времени {time_str}"
 
 
@@ -123,10 +129,8 @@ def test_short_card_numbers():
 def test_non_numeric_cashback():
     """Тест обработки нечислового кэшбэка"""
     transactions = [
-        {"Номер карты": "1111222233334444", "Сумма операции": -100,
-         "Бонусы (включая кэшбэк)": "10"},  # Строка
-        {"Номер карты": "1111222233334444", "Сумма операции": -200,
-         "Бонусы (включая кэшбэк)": None},  # None
+        {"Номер карты": "1111222233334444", "Сумма операции": -100, "Бонусы (включая кэшбэк)": "10"},  # Строка
+        {"Номер карты": "1111222233334444", "Сумма операции": -200, "Бонусы (включая кэшбэк)": None},  # None
     ]
 
     result = process_cards(transactions)
@@ -185,8 +189,7 @@ def test_handles_missing_fields() -> None:
 
 def test_default_n_value() -> None:
     """Проверяет, что по умолчанию возвращается 5 транзакций"""
-    transactions = [{"Сумма операции": -i * 100} for i in
-                    range(10)]  # 10 транзакций
+    transactions = [{"Сумма операции": -i * 100} for i in range(10)]  # 10 транзакций
 
     result = get_top_transactions(transactions)  # Без указания n
     assert len(result) == 5
@@ -195,10 +198,10 @@ def test_default_n_value() -> None:
 def test_success(mock_api: Mock) -> None:
     """Тест успешного получения курсов валют"""
     # Настраиваем мок для возврата тестовых данных
-    mock_api.return_value = [{'currency': 'USD', 'exchange_rate': 90.5}]
+    mock_api.return_value = [{"currency": "USD", "exchange_rate": 90.5}]
 
-    assert get_currency_rates() == [{'USD': 90.5}]
-    mock_api.assert_called_once_with("rub", ('USD', 'EUR', 'CNY'))
+    assert get_currency_rates() == [{"USD": 90.5}]
+    mock_api.assert_called_once_with("rub", ("USD", "EUR", "CNY"))
 
 
 def test_failure(mock_api: Mock) -> None:
@@ -210,30 +213,27 @@ def test_failure(mock_api: Mock) -> None:
 def test_get_stock_prices_success(mock_finnhub: Mock) -> None:
     """Тест успешного получения цен акций через Finnhub."""
     mock_finnhub.return_value = [
-        {'ticker': 'MSFT', 'current_price': 250.75},
-        {'ticker': 'AAPL', 'current_price': 150.50}
+        {"ticker": "MSFT", "current_price": 250.75},
+        {"ticker": "AAPL", "current_price": 150.50},
     ]
 
     result = get_stock_prices()
 
-    expected = [
-        {'MSFT': 250.75},
-        {'AAPL': 150.50}
-    ]
+    expected = [{"MSFT": 250.75}, {"AAPL": 150.50}]
     assert result == expected
 
-    mock_finnhub.assert_called_once_with(('MSFT', 'AAPL', 'TSLA'))
+    mock_finnhub.assert_called_once_with(("MSFT", "AAPL", "TSLA"))
 
 
 def test_custom_tickers(mock_finnhub: Mock) -> None:
     """Тест работы с пользовательским списком тикеров."""
-    mock_finnhub.return_value = [{'ticker': 'GOOGL', 'current_price': 125.25}]
+    mock_finnhub.return_value = [{"ticker": "GOOGL", "current_price": 125.25}]
 
-    result = get_stock_prices(tickers=('GOOGL', 'AMZN'))
-    expected = [{'GOOGL': 125.25}]
+    result = get_stock_prices(tickers=("GOOGL", "AMZN"))
+    expected = [{"GOOGL": 125.25}]
 
     assert result == expected
-    mock_finnhub.assert_called_once_with(('GOOGL', 'AMZN'))
+    mock_finnhub.assert_called_once_with(("GOOGL", "AMZN"))
 
 
 def test_empty_response(mock_finnhub: Mock) -> None:
@@ -247,17 +247,17 @@ def test_empty_response(mock_finnhub: Mock) -> None:
 def test_malformed_data(mock_finnhub: Mock) -> None:
     """Тест обработки некорректных данных от API."""
     mock_finnhub.return_value = [
-        {'wrong_field': 'MSFT'},  # Невалидные данные
-        {'ticker': 'AAPL'},  # Нет цены
-        {'ticker': 'TSLA', 'current_price': 700.50}  # Валидные данные
+        {"wrong_field": "MSFT"},  # Невалидные данные
+        {"ticker": "AAPL"},  # Нет цены
+        {"ticker": "TSLA", "current_price": 700.50},  # Валидные данные
     ]
     result = get_stock_prices()
-    assert True
+    assert result
 
 
 def test_default_resource_used(mock_finnhub: Mock) -> None:
     """Тест использования ресурса по умолчанию (finnhub)."""
-    mock_finnhub.return_value = [{'ticker': 'MSFT', 'current_price': 250.75}]
+    mock_finnhub.return_value = [{"ticker": "MSFT", "current_price": 250.75}]
 
     result = get_stock_prices(resource="finnhub")  # Явно указываем ресурс
     assert len(result) == 1
@@ -275,16 +275,14 @@ def test_main_page_success(mock_dependencies: dict) -> None:
         "cards": [{"card": "test"}],
         "top_transactions": [{"transaction": "test"}],
         "currency_rates": [{"USD": 90.5}],
-        "stock_prices": [{"AAPL": 150.0}]
+        "stock_prices": [{"AAPL": 150.0}],
     }
 
     # Проверяем вызовы зависимостей
-    mock_dependencies["mock_reader"].assert_called_once_with(
-        "data/operations.xlsx")
+    mock_dependencies["mock_reader"].assert_called_once_with("data/operations.xlsx")
     mock_dependencies["mock_greeting"].assert_called_once()
     mock_dependencies["mock_cards"].assert_called_once_with([{"test": "data"}])
-    mock_dependencies["mock_top"].assert_called_once_with([{"test": "data"}],
-                                                          5)
+    mock_dependencies["mock_top"].assert_called_once_with([{"test": "data"}], 5)
     mock_dependencies["mock_rates"].assert_called_once()
     mock_dependencies["mock_stocks"].assert_called_once()
 
@@ -303,6 +301,5 @@ def test_main_page_empty_data(mock_dependencies: dict) -> None:
         "cards": [],
         "top_transactions": [],
         "currency_rates": [{"USD": 90.5}],
-        "stock_prices": [{"AAPL": 150.0}]
+        "stock_prices": [{"AAPL": 150.0}],
     }
-

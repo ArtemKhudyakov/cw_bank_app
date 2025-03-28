@@ -1,6 +1,6 @@
-from typing import Any
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock
 
 
 @pytest.fixture
@@ -12,17 +12,20 @@ def basic_transactions():
         {"Номер карты": "1234567812345678", "Сумма операции": -2000, "Бонусы (включая кэшбэк)": 100},
     ]
 
+
 @pytest.fixture
 def invalid_cards():
-    return [{"Номер карты": "", "Сумма операции": -100},  # Пустой номер
+    return [
+        {"Номер карты": "", "Сумма операции": -100},  # Пустой номер
         {"Номер карты": "nan", "Сумма операции": -200},  # Строка 'nan'
         {"Номер карты": None, "Сумма операции": -300},  # None значение
         {"Номер карты": "1234", "Сумма операции": -400},  # Валидная карта
     ]
 
+
 @pytest.fixture
-def mock_api()->Mock:
-    with patch('src.views.external_api.get_exchange_rates') as mock:
+def mock_api() -> Mock:
+    with patch("src.views.external_api.get_exchange_rates") as mock:
         yield mock
 
 
@@ -30,19 +33,21 @@ def mock_api()->Mock:
 def mock_finnhub():
     """Фикстура для мокирования external_api.get_stock_rates_finnhub.
     Возвращает: Mock: Мок-объект для подмены реального API Finnhub"""
-    with patch('src.views.external_api.get_stock_rates_finnhub') as mock:
+    with patch("src.views.external_api.get_stock_rates_finnhub") as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_dependencies():
     """Фикстура для мокирования всех зависимостей"""
-    with patch('src.views.data_reader.xlsx_reader') as mock_reader, \
-            patch('src.views.get_greeting') as mock_greeting, \
-            patch('src.views.process_cards') as mock_cards, \
-            patch('src.views.get_top_transactions') as mock_top, \
-            patch('src.views.get_currency_rates') as mock_rates, \
-            patch('src.views.get_stock_prices') as mock_stocks:
+    with (
+        patch("src.views.data_reader.xlsx_reader") as mock_reader,
+        patch("src.views.get_greeting") as mock_greeting,
+        patch("src.views.process_cards") as mock_cards,
+        patch("src.views.get_top_transactions") as mock_top,
+        patch("src.views.get_currency_rates") as mock_rates,
+        patch("src.views.get_stock_prices") as mock_stocks,
+    ):
         # Настраиваем моки
         mock_reader.return_value = [{"test": "data"}]
         mock_greeting.return_value = "Добрый день"
@@ -57,8 +62,9 @@ def mock_dependencies():
             "mock_cards": mock_cards,
             "mock_top": mock_top,
             "mock_rates": mock_rates,
-            "mock_stocks": mock_stocks
+            "mock_stocks": mock_stocks,
         }
+
 
 @pytest.fixture
 def stock_test_response():
@@ -69,5 +75,5 @@ def stock_test_response():
         "h": 152.0,  # high
         "l": 149.0,  # low
         "o": 151.0,  # open
-        "pc": 148.5  # previous_close
+        "pc": 148.5,  # previous_close
     }

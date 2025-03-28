@@ -1,12 +1,11 @@
 import json
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional, Hashable
-import src.external_api as external_api
+from typing import Any, Dict, Hashable, List, Optional
 
 from tzlocal import get_localzone
 
 import src.data_reader as data_reader
-
+import src.external_api as external_api
 
 # data_dict = [
 #     {
@@ -99,7 +98,6 @@ def get_current_time() -> str:
     return time
 
 
-
 def get_greeting() -> str:
     """Возвращает приветствие в зависимости от времени."""
     time_string = get_current_time()
@@ -164,20 +162,20 @@ def get_top_transactions(transactions: List[Dict[Hashable, Any]], n: int = 5) ->
     return top_transactions
 
 
-def get_currency_rates(currencies = ('USD', 'EUR', 'CNY')) -> Optional[List[Dict[str, Any]] | Any]:
+def get_currency_rates(currencies=("USD", "EUR", "CNY")) -> Optional[List[Dict[str, Any]] | Any]:
     """Возвращает актуальные курсы валют по отношению к рублю"""
     exchange_rates = external_api.get_exchange_rates("rub", currencies)
     result = []
     if exchange_rates:
         for currency in exchange_rates:
-            exchange_rate_to_rub = {currency['currency']: currency['exchange_rate']}
+            exchange_rate_to_rub = {currency["currency"]: currency["exchange_rate"]}
             result.append(exchange_rate_to_rub)
         return result
     else:
         return None
 
 
-def get_stock_prices(resource = "finnhub", tickers = ('MSFT', 'AAPL', 'TSLA')) -> List[Dict[str, Any]]:
+def get_stock_prices(resource="finnhub", tickers=("MSFT", "AAPL", "TSLA")) -> List[Dict[str, Any]]:
     """Возвращает цены акций из S&P500. Принимает на вход название ресурса,
     с которого производится загрузка данных по фондовому рынку."""
     if resource == "finnhub":
@@ -185,9 +183,7 @@ def get_stock_prices(resource = "finnhub", tickers = ('MSFT', 'AAPL', 'TSLA')) -
         stock_prices = []
         for ticker in data:
             try:
-                ticker_price = {
-                    ticker["ticker"]: ticker.get("current_price", None)
-                }
+                ticker_price = {ticker["ticker"]: ticker.get("current_price", None)}
                 stock_prices.append(ticker_price)
             except KeyError:
                 continue  # Пропускаем записи без тикера
@@ -209,7 +205,7 @@ def main_page():
         "cards": cards,
         "top_transactions": top_transactions,
         "currency_rates": currency_rates,
-        "stock_prices": stock_prices
+        "stock_prices": stock_prices,
     }
 
     return json.dumps(response, ensure_ascii=False, indent=4)
