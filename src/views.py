@@ -102,11 +102,10 @@ def get_current_time() -> str:
     return time
 
 
-time_string = get_current_time()
 
-
-def get_greeting(time_string: str) -> str:
+def get_greeting() -> str:
     """Возвращает приветствие в зависимости от времени."""
+    time_string = get_current_time()
     date = datetime.strptime(time_string, "%Y-%m-%d %H:%M:%S")
     hour = date.hour
 
@@ -121,13 +120,13 @@ def get_greeting(time_string: str) -> str:
 
 
 print(get_current_time())
-print(get_greeting(time_string))
+print(get_greeting())
 
 
 def process_cards(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Обрабатывает данные по картам."""
     cards = {}
-    amount = None
+    # amount = None
     for transaction in transactions:
         card = transaction.get("Номер карты", "")
         if card == "nan" or not card:
@@ -137,7 +136,7 @@ def process_cards(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if transaction.get("Сумма операции", 0) < 0:
             amount = abs(transaction.get("Сумма операции", 0))
         else:
-            0
+            amount = 0
 
         if last_digits not in cards:
             cards[last_digits] = {"last_digits": last_digits, "total_spent": 0.0, "cashback": 0.0}
@@ -187,19 +186,41 @@ def get_currency_rates(currencies = ('USD', 'EUR', 'CNY')) -> Optional[List[Dict
         return None
 
 
-def get_stock_prices() -> List[Dict[str, Any]]:
-    """Возвращает цены акций (заглушка)."""
-    return [
-        {"stock": "AAPL", "price": 150.12},
-        {"stock": "AMZN", "price": 3173.18},
-        {"stock": "GOOGL", "price": 2742.39},
-        {"stock": "MSFT", "price": 296.71},
-        {"stock": "TSLA", "price": 1007.08}]
+def get_stock_prices(resource = "finnhub", tickers = ('MSFT', 'AAPL', 'TSLA')) -> List[Dict[str, Any]]:
+    """Возвращает цены акций из S&P500. Принимает на вход название ресурса,
+    с которого производится загрузка данных по фондовому рынку."""
+    if resource == "finnhub":
+        data = external_api.get_stock_rates_finnhub(tickers)
+        stock_prices = []
+        for ticker in data:
+            ticker_price = {}
+            ticker_price[ticker["ticker"]] = ticker["current_price"]
+            stock_prices.append(ticker_price)
+        return stock_prices
 
 
 
+def main():
+    """Главная функция, обрабатывающая данные и возвращающая JSON-ответ"""
+    # Парсим входные данные, если они в формате строки
+    greeting = get_greeting()
+    cards = process_cards(data)
+    top_transactions = get_top_transactions(data, 5)
+    currency_rates = get_currency_rates()
+    stock_prices = get_stock_prices()
 
-for transaction in get_top_transactions(data, 10):
+    response = {
+        "greeting": greeting,
+        "cards": cards,
+        "top_transactions": top_transactions,
+        "currency_rates": currency_rates,
+        "stock_prices": stock_prices
+    }
+
+    return json.dumps(response, ensure_ascii=False, indent=4)
+
+
+for transaction in get_top_transactions(data, 5):
     print(transaction)
 currency_rate = get_currency_rates()
 if currency_rate:
@@ -207,3 +228,10 @@ if currency_rate:
         print(i)
 else:
     print(currency_rate)
+stock_prices = get_stock_prices()
+if stock_prices:
+    for i in stock_prices:
+        print(i)
+
+print("#####")
+print(main())
