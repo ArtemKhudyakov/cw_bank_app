@@ -42,12 +42,12 @@ def mock_finnhub() -> Generator[Mock]:
 def mock_dependencies() -> Generator[Dict[str, Mock]]:
     """Фикстура для мокирования всех зависимостей"""
     with (
-        patch("src.utils.data_reader.xlsx_reader") as mock_reader,
-        patch("src.utils.get_greeting") as mock_greeting,
-        patch("src.utils.process_cards") as mock_cards,
-        patch("src.utils.get_top_transactions") as mock_top,
-        patch("src.utils.get_currency_rates") as mock_rates,
-        patch("src.utils.get_stock_prices") as mock_stocks,
+        patch("src.views.data_reader.xlsx_reader") as mock_reader,
+        patch("src.views.get_greeting") as mock_greeting,
+        patch("src.views.process_cards") as mock_cards,
+        patch("src.views.get_top_transactions") as mock_top,
+        patch("src.views.get_currency_rates") as mock_rates,
+        patch("src.views.get_stock_prices") as mock_stocks,
     ):
         # Настраиваем моки
         mock_reader.return_value = [{"test": "data"}]
