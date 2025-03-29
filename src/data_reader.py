@@ -1,5 +1,5 @@
 import pathlib as p
-from typing import Any, Dict, Hashable, List
+from typing import Any, Dict, List
 
 import pandas as pd
 

@@ -1,11 +1,11 @@
+from typing import Any, Dict, Generator, List
 from unittest.mock import Mock, patch
-from typing import Any, List, Dict, Generator
 
 import pytest
 
 
 @pytest.fixture
-def basic_transactions()->List[Dict[str, Any]]:
+def basic_transactions() -> List[Dict[str, Any]]:
     """Фикстура возвращает базовый набор транзакций"""
     return [
         {"Номер карты": "1234567812345678", "Сумма операции": -1000, "Бонусы (включая кэшбэк)": 50},
@@ -15,7 +15,7 @@ def basic_transactions()->List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def invalid_cards()->List[Dict[str, Any]]:
+def invalid_cards() -> List[Dict[str, Any]]:
     return [
         {"Номер карты": "", "Сумма операции": -100},  # Пустой номер
         {"Номер карты": "nan", "Сумма операции": -200},  # Строка 'nan'
@@ -25,13 +25,13 @@ def invalid_cards()->List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def mock_api() -> Generator[Mock] :
+def mock_api() -> Generator[Mock]:
     with patch("src.views.external_api.get_exchange_rates") as mock:
         yield mock
 
 
 @pytest.fixture
-def mock_finnhub()->Generator[Mock]:
+def mock_finnhub() -> Generator[Mock]:
     """Фикстура для мокирования external_api.get_stock_rates_finnhub.
     Возвращает: Mock: Мок-объект для подмены реального API Finnhub"""
     with patch("src.views.external_api.get_stock_rates_finnhub") as mock:
@@ -39,7 +39,7 @@ def mock_finnhub()->Generator[Mock]:
 
 
 @pytest.fixture
-def mock_dependencies()->Generator[Dict[str, Mock]] :
+def mock_dependencies() -> Generator[Dict[str, Mock]]:
     """Фикстура для мокирования всех зависимостей"""
     with (
         patch("src.views.data_reader.xlsx_reader") as mock_reader,
@@ -68,7 +68,7 @@ def mock_dependencies()->Generator[Dict[str, Mock]] :
 
 
 @pytest.fixture
-def stock_test_response()->Dict[str, float]:
+def stock_test_response() -> Dict[str, float]:
     return {
         "c": 150.0,  # current_price
         "d": 1.5,  # change
