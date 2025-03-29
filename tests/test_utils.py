@@ -10,7 +10,7 @@ from src.utils import (
     get_greeting,
     get_stock_prices,
     get_top_transactions,
-    process_cards
+    process_cards,
 )
 
 
