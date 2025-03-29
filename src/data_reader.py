@@ -19,3 +19,9 @@ def xlsx_reader(
     except FileNotFoundError:
         print(f"File not found: {file_path}")
         raise
+
+
+# data = list(xlsx_reader())
+# for i, t in enumerate(data):
+#     if i <10:
+#         print(t)

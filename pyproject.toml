@@ -36,6 +36,7 @@ tzlocal = "^5.3.1"
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.3.5"
 pytest-cov = "^6.0.0"
+pytest-mock = "^3.14.0"
 
 
 [tool.poetry.group.finance.dependencies]
