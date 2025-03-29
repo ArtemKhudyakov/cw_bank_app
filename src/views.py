@@ -43,9 +43,9 @@ def get_greeting() -> str:
         return "Доброй ночи"
 
 
-def process_cards(transactions: Iterable[Dict[Hashable, Any]]) -> List[Dict[str, Any]]:
+def process_cards(transactions: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Обрабатывает данные по картам."""
-    cards = {}
+    cards: Dict[str, Dict[str, Any]] = {}
     for transaction in transactions:
         card = transaction.get("Номер карты", "")
         if card == "nan" or not card:
@@ -68,7 +68,7 @@ def process_cards(transactions: Iterable[Dict[Hashable, Any]]) -> List[Dict[str,
     return list(cards.values())
 
 
-def get_top_transactions(transactions: List[Dict[Hashable, Any]], n: int = 5) -> List[Dict[Hashable, Any]]:
+def get_top_transactions(transactions: List[Dict[str, Any]], n: int = 5) -> List[Dict[str, Any]]:
     """Возвращает топ-N транзакций по сумме."""
     valid_transactions = [
         t for t in transactions if isinstance(t.get("Сумма операции"), (int, float)) and t.get("Сумма операции", 0) < 0
@@ -104,22 +104,28 @@ def get_currency_rates(currencies:Sequence[str]=("USD", "EUR", "CNY")) -> Option
         return None
 
 
-def get_stock_prices(resource:str="finnhub", tickers: Sequence[str]=("MSFT", "AAPL", "TSLA")) -> List[Dict[str, Any]]:
+def get_stock_prices(resource: str = "finnhub", tickers: Sequence[str] = ("MSFT", "AAPL", "TSLA")
+                     ) -> List[Dict[str, Any]]:
     """Возвращает цены акций из S&P500. Принимает на вход название ресурса,
     с которого производится загрузка данных по фондовому рынку."""
-    if resource == "finnhub":
-        data = external_api.get_stock_rates_finnhub(tickers)
-        stock_prices = []
-        for ticker in data:
-            try:
-                ticker_price = {ticker["ticker"]: ticker.get("current_price", None)}
-                stock_prices.append(ticker_price)
-            except KeyError:
-                continue  # Пропускаем записи без тикера
-        return stock_prices
+    if resource != "finnhub":
+        return []  # или raise ValueError(f"Unsupported resource: {resource}")
+
+    data = external_api.get_stock_rates_finnhub(tickers)
+    if data is None:
+        return []  # или raise ValueError("Failed to fetch data from finnhub")
+
+    stock_prices = []
+    for ticker in data:
+        try:
+            ticker_price = {ticker["ticker"]: ticker.get("current_price", None)}
+            stock_prices.append(ticker_price)
+        except KeyError:
+            continue
+    return stock_prices
 
 
-def main_page()->json:
+def main_page()->str:
     """Главная функция, обрабатывающая данные и возвращающая JSON-ответ"""
     # Парсим входные данные, если они в формате строки
     data = data_reader.xlsx_reader("data/operations.xlsx")
@@ -129,7 +135,7 @@ def main_page()->json:
     currency_rates = get_currency_rates()
     stock_prices = get_stock_prices()
 
-    response = {
+    response: Dict[str, Any] = {
         "greeting": greeting,
         "cards": cards,
         "top_transactions": top_transactions,

@@ -176,7 +176,7 @@ def get_stock_rates_finnhub(stock: Sequence[str] = ("MSFT", "AAPL", "TSLA"), tim
         try:
             for ticker in stock:
                 url = f"https://finnhub.io/api/v1/quote?symbol=AAPL&token={API_KEY}"
-                response = requests.get(url)
+                response = requests.get(url, timeout=timeout)
                 data = response.json()
                 ticker_info = {
                     "ticker": f"{ticker}",
@@ -212,3 +212,4 @@ def get_stock_rates_finnhub(stock: Sequence[str] = ("MSFT", "AAPL", "TSLA"), tim
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Ошибка обработки данных: {str(e)}")
             return None
+    return None

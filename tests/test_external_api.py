@@ -111,7 +111,7 @@ def test_multiple_stocks(stock_test_response:List[Dict[str, float]])-> None:
 
         with patch.dict("os.environ", {"FINHUB_API_KEY": "test_key"}):
             result = get_stock_rates_finnhub(stock=["AAPL", "MSFT"])
-
+    assert result is not None
     assert len(result) == 2
     assert result[0]["ticker"] == "AAPL"
     assert result[1]["ticker"] == "MSFT"

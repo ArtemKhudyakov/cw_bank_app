@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from unittest.mock import Mock, patch
+from typing import Any, List, Dict
 
 import pytest
 
@@ -76,7 +77,7 @@ def test_greeting_boundary_times(time_str:str, expected:str)->None:
         assert get_greeting() == expected, f"Ошибка для времени {time_str}"
 
 
-def test_process_cards_basic(basic_transactions)->None:
+def test_process_cards_basic(basic_transactions: List[Dict[str, Any]])->None:
     """Тест базовой функциональности"""
 
     result = process_cards(basic_transactions)
@@ -90,7 +91,7 @@ def test_process_cards_basic(basic_transactions)->None:
     assert result[1]["cashback"] == 25
 
 
-def test_skip_invalid_cards(invalid_cards)->None:
+def test_skip_invalid_cards(invalid_cards: List[Dict[str, Any]])->None:
     """Тест пропуска невалидных номеров карт"""
 
     result = process_cards(invalid_cards)
