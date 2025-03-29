@@ -1,6 +1,6 @@
 import json
 from datetime import UTC, datetime
-from typing import Any, Dict, Hashable, List, Optional
+from typing import Any, Dict, Hashable, List, Optional, Iterable, Sequence
 
 from tzlocal import get_localzone
 
@@ -43,7 +43,7 @@ def get_greeting() -> str:
         return "Доброй ночи"
 
 
-def process_cards(transactions: List[Dict[Hashable, Any]]) -> List[Dict[Hashable, Any]]:
+def process_cards(transactions: Iterable[Dict[Hashable, Any]]) -> List[Dict[str, Any]]:
     """Обрабатывает данные по картам."""
     cards = {}
     for transaction in transactions:
@@ -91,7 +91,7 @@ def get_top_transactions(transactions: List[Dict[Hashable, Any]], n: int = 5) ->
     return top_transactions
 
 
-def get_currency_rates(currencies=("USD", "EUR", "CNY")) -> Optional[List[Dict[str, Any]] | Any]:
+def get_currency_rates(currencies:Sequence[str]=("USD", "EUR", "CNY")) -> Optional[List[Dict[str, Any]] | Any]:
     """Возвращает актуальные курсы валют по отношению к рублю"""
     exchange_rates = external_api.get_exchange_rates("rub", currencies)
     result = []
@@ -104,7 +104,7 @@ def get_currency_rates(currencies=("USD", "EUR", "CNY")) -> Optional[List[Dict[s
         return None
 
 
-def get_stock_prices(resource="finnhub", tickers=("MSFT", "AAPL", "TSLA")) -> List[Dict[str, Any]]:
+def get_stock_prices(resource:str="finnhub", tickers: Sequence[str]=("MSFT", "AAPL", "TSLA")) -> List[Dict[str, Any]]:
     """Возвращает цены акций из S&P500. Принимает на вход название ресурса,
     с которого производится загрузка данных по фондовому рынку."""
     if resource == "finnhub":
@@ -119,7 +119,7 @@ def get_stock_prices(resource="finnhub", tickers=("MSFT", "AAPL", "TSLA")) -> Li
         return stock_prices
 
 
-def main_page():
+def main_page()->json:
     """Главная функция, обрабатывающая данные и возвращающая JSON-ответ"""
     # Парсим входные данные, если они в формате строки
     data = data_reader.xlsx_reader("data/operations.xlsx")

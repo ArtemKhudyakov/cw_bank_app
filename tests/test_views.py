@@ -15,7 +15,7 @@ from src.views import (
 )
 
 
-def test_get_current_time_format():
+def test_get_current_time_format()->None:
     """Тест формата возвращаемого времени"""
     with patch("src.views.datetime") as mock_datetime:
         test_time = datetime(2023, 12, 25, 15, 30, 45)
@@ -24,7 +24,7 @@ def test_get_current_time_format():
         assert result == "2023-12-25 15:30:45"
 
 
-def test_get_current_time_uses_current_time():
+def test_get_current_time_uses_current_time()->None:
     """Тест использования текущего времени"""
     with patch("src.views.datetime") as mock_datetime:
         test_time = datetime(2023, 1, 1, 12, 0, 0)
@@ -33,25 +33,25 @@ def test_get_current_time_uses_current_time():
         assert "12:00:00" in result
 
 
-def test_greeting_morning():
+def test_greeting_morning()->None:
     """Тест для утреннего приветствия (5:00-11:59)"""
     with patch("src.views.get_current_time", return_value="2023-01-01 08:30:00"):
         assert get_greeting() == "Доброе утро"
 
 
-def test_greeting_afternoon():
+def test_greeting_afternoon()->None:
     """Тест для дневного приветствия (12:00-16:59)"""
     with patch("src.views.get_current_time", return_value="2023-01-01 14:15:00"):
         assert get_greeting() == "Добрый день"
 
 
-def test_greeting_evening():
+def test_greeting_evening()->None:
     """Тест для вечернего приветствия (17:00-22:59)"""
     with patch("src.views.get_current_time", return_value="2023-01-01 19:45:00"):
         assert get_greeting() == "Добрый вечер"
 
 
-def test_greeting_night():
+def test_greeting_night()->None:
     """Тест для ночного приветствия (23:00-4:59)"""
     with patch("src.views.get_current_time", return_value="2023-01-01 03:20:00"):
         assert get_greeting() == "Доброй ночи"
@@ -70,13 +70,13 @@ def test_greeting_night():
         ("23:00:00", "Доброй ночи"),
     ],
 )
-def test_greeting_boundary_times(time_str, expected):
+def test_greeting_boundary_times(time_str:str, expected:str)->None:
     """Параметризованный тест граничных значений"""
     with patch("src.views.get_current_time", return_value=f"2023-01-01 {time_str}"):
         assert get_greeting() == expected, f"Ошибка для времени {time_str}"
 
 
-def test_process_cards_basic(basic_transactions):
+def test_process_cards_basic(basic_transactions)->None:
     """Тест базовой функциональности"""
 
     result = process_cards(basic_transactions)
@@ -90,7 +90,7 @@ def test_process_cards_basic(basic_transactions):
     assert result[1]["cashback"] == 25
 
 
-def test_skip_invalid_cards(invalid_cards):
+def test_skip_invalid_cards(invalid_cards)->None:
     """Тест пропуска невалидных номеров карт"""
 
     result = process_cards(invalid_cards)
@@ -100,7 +100,7 @@ def test_skip_invalid_cards(invalid_cards):
     assert result[0]["total_spent"] == 400
 
 
-def test_positive_amounts_ignored():
+def test_positive_amounts_ignored()->None:
     """Тест игнорирования положительных сумм"""
     transactions = [
         {"Номер карты": "1111222233334444", "Сумма операции": 1000},
@@ -113,7 +113,7 @@ def test_positive_amounts_ignored():
     assert result[0]["total_spent"] == 500
 
 
-def test_short_card_numbers():
+def test_short_card_numbers()->None:
     """Тест обработки коротких номеров карт"""
     transactions = [
         {"Номер карты": "123", "Сумма операции": -100},  # Номер короче 4 цифр
@@ -126,7 +126,7 @@ def test_short_card_numbers():
     assert result[1]["last_digits"] == "4567"  # Берется весь номер
 
 
-def test_non_numeric_cashback():
+def test_non_numeric_cashback()->None:
     """Тест обработки нечислового кэшбэка"""
     transactions = [
         {"Номер карты": "1111222233334444", "Сумма операции": -100, "Бонусы (включая кэшбэк)": "10"},  # Строка

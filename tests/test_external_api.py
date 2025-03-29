@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from src.external_api import get_exchange_rates, get_stock_rates_finnhub
 
+from typing import Any, List, Dict
 
 def test_successful_response() -> None:
     """Тест успешного получения курсов валют"""
@@ -50,7 +51,7 @@ def test_missing_api_key() -> None:
     assert result is None
 
 
-def test_successful_response_fh(stock_test_response):
+def test_successful_response_fh(stock_test_response:dict[str, int])->None:
     """Тест успешного получения данных об акциях"""
 
     with patch("requests.get") as mock_get:
@@ -76,7 +77,7 @@ def test_successful_response_fh(stock_test_response):
     ]
 
 
-def test_missing_api_key_fh():
+def test_missing_api_key_fh()-> None:
     """Тест отсутствия API-ключа"""
     # 1. Полностью очищаем переменные окружения
     with patch.dict("os.environ", {}, clear=True):
@@ -92,7 +93,7 @@ def test_missing_api_key_fh():
     mock_print.assert_called_with("Ошибка: FINHUB_API_KEY не найден в .env")
 
 
-def test_http_error():
+def test_http_error()-> None:
     """Тест ошибки HTTP запроса"""
     with patch("requests.get") as mock_get:
         mock_get.return_value.status_code = 401  # Unauthorized
@@ -101,12 +102,8 @@ def test_http_error():
     assert result is None
 
 
-def test_multiple_stocks(stock_test_response):
+def test_multiple_stocks(stock_test_response:List[Dict[str, float]])-> None:
     """Тест обработки нескольких акций"""
-    # test_data = {
-    #     "c": 150.0, "d": 1.5, "dp": 1.01,
-    #     "h": 152.0, "l": 149.0, "o": 151.0, "pc": 148.5
-    # }
 
     with patch("requests.get") as mock_get:
         mock_get.return_value.status_code = 200
@@ -120,7 +117,7 @@ def test_multiple_stocks(stock_test_response):
     assert result[1]["ticker"] == "MSFT"
 
 
-def test_invalid_json_response():
+def test_invalid_json_response()-> None:
     """Тест невалидного JSON ответа"""
     with patch("requests.get") as mock_get:
         mock_get.return_value.status_code = 200

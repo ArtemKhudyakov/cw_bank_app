@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 
 
 def get_exchange_rates(
-    base: str = "RUB", currencies: Sequence[str] = ("USD", "EUR", "CNY"), timeout: float = 20.0, max_retries: int = 2
+        base: str = "RUB", currencies: Sequence[str] = ("USD", "EUR", "CNY"), timeout: float = 20.0,
+        max_retries: int = 2
 ) -> Optional[list[Dict[str, Any]]]:
     """Принимает коды валют: базовую (тип: str, пример: "RUB"), в которой рассчитывается стоимость; список валют валют,
     стоимость которых нужно рассчитать (тип: Sequence[str], пример: ('USD', 'EUR', 'CNY').
@@ -77,7 +78,7 @@ def get_exchange_rates(
                 print("Превышено максимальное количество попыток")
                 return None
 
-            time.sleep(2**attempt)
+            time.sleep(2 ** attempt)
 
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Ошибка обработки данных: {str(e)}")
@@ -146,9 +147,8 @@ def get_exchange_rates(
 #     raise RuntimeError("Непредвиденная ошибка: превышены все попытки запроса")
 
 
-def get_stock_rates_finnhub(
-    stock: Sequence[str] = ("MSFT", "AAPL", "TSLA"), timeout: float = 20.0, max_retries: int = 2
-) -> Optional[list[Dict[str, Any]]]:
+def get_stock_rates_finnhub(stock: Sequence[str] = ("MSFT", "AAPL", "TSLA"), timeout: float = 20.0,
+                            max_retries: int = 2) -> Optional[list[Dict[str, Any]]]:
     """Принимает коды валют: базовую (тип: str, пример: "RUB"), в которой рассчитывается стоимость;
     список валют валют, стоимость которых нужно рассчитать (тип: Sequence[str], пример: ('USD', 'EUR', 'CNY').
     Возвращает список словарей с курсами.
@@ -207,7 +207,7 @@ def get_stock_rates_finnhub(
                 print("Превышено максимальное количество попыток")
                 return None
 
-            time.sleep(2**attempt)
+            time.sleep(2 ** attempt)
 
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Ошибка обработки данных: {str(e)}")
