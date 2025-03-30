@@ -11,35 +11,50 @@ from _pytest.monkeypatch import MonkeyPatch
 from src.reports import MOSCOW_TZ, report_to_file, spending_by_category
 
 
-def test_spending_by_category_with_dataframe(data_dataframe: pd.DataFrame) -> None:
+def test_spending_by_category_with_dataframe(
+    data_dataframe: pd.DataFrame, monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     """Тестирует работу функции с DataFrame на входе."""
+    monkeypatch.setattr("src.reports.project_root_path", tmp_path)
     result = spending_by_category(data_dataframe, "Супермаркеты", "2023-04-10")
     assert len(result) == 1
-    assert all(result["Категория"].str.lower() == "супермаркetes")
+    assert all(result["Категория"].str.lower() == str("супермаркеты"))
     assert all(result["Сумма операции"] > 0)
 
 
-def test_spending_by_category_with_list(data_list: List[Dict[str, Any]]) -> None:
+def test_spending_by_category_with_list(
+    data_list: List[Dict[str, Any]], monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     """Тестирует работу функции со списком словарей на входе."""
+    monkeypatch.setattr("src.reports.project_root_path", tmp_path)
     result = spending_by_category(data_list, "супермаркеты")
     assert len(result) == 2
     assert all(result["Сумма операции"] > 0)
 
 
-def test_spending_by_category_date_formatting(data_dataframe: pd.DataFrame) -> None:
+def test_spending_by_category_date_formatting(
+    data_dataframe: pd.DataFrame, monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     """Тестирует форматирование дат в результате."""
+    monkeypatch.setattr("src.reports.project_root_path", tmp_path)
     result = spending_by_category(data_dataframe, "Супермаркеты")
     assert result["Дата операции"].str.contains(r"\d{2}\.\d{2}\.\d{4} \(UTC \+3\)").all()
 
 
-def test_spending_by_category_missing_columns(data_dataframe: pd.DataFrame) -> None:
+def test_spending_by_category_missing_columns(
+    data_dataframe: pd.DataFrame, monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     """Тестирует обработку отсутствия обязательных колонок."""
+    monkeypatch.setattr("src.reports.project_root_path", tmp_path)
     with pytest.raises(ValueError):
         spending_by_category(data_dataframe.drop(columns=["Категория"]), "Супермаркеты")
 
 
-def test_spending_by_category_empty_result(data_dataframe: pd.DataFrame) -> None:
+def test_spending_by_category_empty_result(
+    data_dataframe: pd.DataFrame, monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     """Тестирует обработку несуществующей категории."""
+    monkeypatch.setattr("src.reports.project_root_path", tmp_path)
     result = spending_by_category(data_dataframe, "Несуществующая категория")
     assert len(result) == 0
 
@@ -100,7 +115,9 @@ def test_timezone_handling_now(data_dataframe: pd.DataFrame, monkeypatch: Monkey
     assert all(result_dates >= three_months_ago)
 
 
-def test_error_logging(caplog: LogCaptureFixture, data_dataframe: pd.DataFrame) -> None:
+def test_error_logging(
+    caplog: LogCaptureFixture, data_dataframe: pd.DataFrame, monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     """Тестирует логирование ошибок."""
     try:
         spending_by_category(data_dataframe.drop(columns=["Дата операции"]), "Супермаркеты")
