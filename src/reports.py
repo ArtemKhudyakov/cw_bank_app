@@ -42,12 +42,12 @@ def get_moscow_time(fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
     return moscow_time.strftime(fmt)
 
 
-def report_to_file(func_or_filename: Optional[Union[Callable, str]] = None)-> Callable:
+def report_to_file(func_or_filename: Optional[Union[Callable, str]] = None) -> Callable:
     """Декоратор для сохранения отчетов в файл"""
 
     def decorator(report_func: Callable) -> Callable:
         @wraps(report_func)
-        def wrapper(*args:Any, **kwargs:Any) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             result = report_func(*args, **kwargs)
 
             # Путь к папке "json_reports_dir"
