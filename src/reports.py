@@ -1,11 +1,12 @@
-import logging
 import json
-import pathlib as p
+import logging
 import os
+import pathlib as p
 from datetime import datetime, timedelta
 from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, Union
+
 import pandas as pd
-from typing import Optional, Callable, Any, Union, List, Dict
 import pytz
 
 # Получаем имя модуля
@@ -31,22 +32,22 @@ file_handler.setFormatter(file_formater)
 logger.addHandler(file_handler)
 
 # Настраиваем московскую временную зону (UTC+3)
-MOSCOW_TZ = pytz.timezone('Europe/Moscow')
+MOSCOW_TZ = pytz.timezone("Europe/Moscow")
 
 
-def get_moscow_time(fmt: str = '%Y-%m-%d %H:%M:%S') -> str:
+def get_moscow_time(fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
     """Получает текущее время UTC+3 (по умолчанию 'ГГГГ-ММ-ДД ЧЧ:ММ:СС')"""
 
     moscow_time = datetime.now(MOSCOW_TZ)
     return moscow_time.strftime(fmt)
 
 
-def report_to_file(func_or_filename: Optional[Union[Callable, str]] = None):
+def report_to_file(func_or_filename: Optional[Union[Callable, str]] = None)-> Callable:
     """Декоратор для сохранения отчетов в файл"""
 
     def decorator(report_func: Callable) -> Callable:
         @wraps(report_func)
-        def wrapper(*args, **kwargs) -> Any:
+        def wrapper(*args:Any, **kwargs:Any) -> Any:
             result = report_func(*args, **kwargs)
 
             # Путь к папке "json_reports_dir"
@@ -62,9 +63,9 @@ def report_to_file(func_or_filename: Optional[Union[Callable, str]] = None):
                 file_name = f"report_{report_func.__name__}_{get_moscow_time('%Y-%m-%d_%H-%M-%S')}.json"
 
             try:
-                with open(f"{json_reports_dir}/{file_name}", 'w', encoding='utf-8') as f:
+                with open(f"{json_reports_dir}/{file_name}", "w", encoding="utf-8") as f:
                     if isinstance(result, (pd.DataFrame, pd.Series)):
-                        result.to_json(f, orient='records', force_ascii=False, indent=4)
+                        result.to_json(f, orient="records", force_ascii=False, indent=4)
                     else:
                         json.dump(result, f, ensure_ascii=False, indent=4)
                 logger.info(f"Отчет сохранен в файл: {file_name}")
@@ -82,8 +83,9 @@ def report_to_file(func_or_filename: Optional[Union[Callable, str]] = None):
 
 
 @report_to_file
-def spending_by_category(transactions: Union[pd.DataFrame, List[Dict[str, Any]]], category: str,
-                         target_date: Optional[str] = None) -> pd.DataFrame:
+def spending_by_category(
+    transactions: Union[pd.DataFrame, List[Dict[str, Any]]], category: str, target_date: Optional[str] = None
+) -> pd.DataFrame:
     """Возвращает траты по заданной категории за последние 3 месяца.
     Даты форматируются в виде 'DD.MM.YYYY (UTC +3)'"""
 
@@ -97,15 +99,14 @@ def spending_by_category(transactions: Union[pd.DataFrame, List[Dict[str, Any]]]
             transactions_df = transactions.copy()
 
         # Проверяем необходимые колонки
-        required_columns = {'Дата операции', 'Категория', 'Сумма операции'}
+        required_columns = {"Дата операции", "Категория", "Сумма операции"}
         if not required_columns.issubset(transactions_df.columns):
             missing = required_columns - set(transactions_df.columns)
             raise ValueError(f"Отсутствуют обязательные колонки: {missing}")
 
         # Преобразуем дату операции в datetime с учетом временной зоны
-        transactions_df['Дата операции'] = pd.to_datetime(
-            transactions_df['Дата операции'],
-            dayfirst=True
+        transactions_df["Дата операции"] = pd.to_datetime(
+            transactions_df["Дата операции"], dayfirst=True
         ).dt.tz_localize(MOSCOW_TZ)
 
         # Определяем диапазон дат
@@ -118,25 +119,27 @@ def spending_by_category(transactions: Union[pd.DataFrame, List[Dict[str, Any]]]
 
         # Фильтрация данных
         mask = (
-                (transactions_df['Категория'].str.lower().fillna('') == category.lower().strip()) &
-                (transactions_df['Дата операции'] >= three_months_ago) &
-                (transactions_df['Дата операции'] <= current_date) &
-                (transactions_df['Сумма операции'].astype(float) < 0)
+            (transactions_df["Категория"].str.lower().fillna("") == category.lower().strip())
+            & (transactions_df["Дата операции"] >= three_months_ago)
+            & (transactions_df["Дата операции"] <= current_date)
+            & (transactions_df["Сумма операции"].astype(float) < 0)
         )
 
         result = transactions_df.loc[mask].copy()
-        result['Сумма операции'] = result['Сумма операции'].abs()
+        result["Сумма операции"] = result["Сумма операции"].abs()
 
         # Форматируем дату для вывода
-        result['Дата операции'] = result['Дата операции'].dt.strftime('%d.%m.%Y (UTC +3)')
+        result["Дата операции"] = result["Дата операции"].dt.strftime("%d.%m.%Y (UTC +3)")
 
         logger.info(f"Найдено {len(result)} транзакций")
-        return result.sort_values('Дата операции', ascending=False)
+        return result.sort_values("Дата операции", ascending=False)
 
     except Exception as e:
         logger.error(f"Ошибка: {e}", exc_info=True)
         raise
 
-from data_reader import xlsx_reader
-transactions = xlsx_reader()
-spending_by_category(transactions, "Супермаркеты", target_date='2020-03-01')
+
+# from data_reader import xlsx_reader
+#
+# transactions = xlsx_reader()
+# spending_by_category(transactions, "Супермаркеты", target_date="2020-03-01")
