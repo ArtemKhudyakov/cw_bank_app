@@ -47,7 +47,7 @@ def test_empty_currencies() -> None:
 def test_missing_api_key() -> None:
     """Тест отсутствия API-ключа"""
     with patch.dict("os.environ", {}, clear=True):
-        with patch('requests.request') as mock_get:
+        with patch("requests.request"):
             # Убедитесь, что функция не пытается делать реальные запросы
             result = get_exchange_rates()
     assert result is None
