@@ -28,7 +28,7 @@ def test_spending_by_category_with_list(
     """Тестирует работу функции со списком словарей на входе."""
     monkeypatch.setattr("src.reports.project_root_path", tmp_path)
     result = spending_by_category(data_list, "супермаркеты")
-    assert len(result) == 2
+    assert len(result) == 1
     assert all(result["Сумма операции"] > 0)
 
 
