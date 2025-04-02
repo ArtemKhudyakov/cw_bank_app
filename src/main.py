@@ -1,15 +1,20 @@
-from src.utils import get_top_transactions
-
-from . import data_reader as dr
-from . import reports as r
-from . import services as s
-from . import utils as u
-from . import views as v
+from src.data_reader import xlsx_reader
+from src.reports import spending_by_category
+from src.services import investment_bank
+from src.utils import (
+    get_greeting,
+    get_current_time,
+    process_cards,
+    get_currency_rates,
+    get_stock_prices,
+    get_top_transactions
+)
+from src.views import main_page
 
 
 def main() -> None:
-    transactions = dr.xlsx_reader("data/operations.xlsx")
-    print(u.get_greeting())
+    transactions = xlsx_reader("data/operations.xlsx")
+    print(get_greeting())
     print("Давайте проверим работоспособность всех функций")
     while True:
         func_numb = input(
@@ -23,16 +28,16 @@ def main() -> None:
         7. Функция 'investment_bank' рассчитывает сумму для инвесткопилки через округление трат за указанный месяц.
         8. Функция 'report_to_file' возвращает траты по заданной категории за последние 3 месяца с указанной даты.
         9. Функция 'main_page' функция, обрабатывающая данные и возвращающая JSON-ответ для страницы главная.
-        Для выхода из программы введите 'quit
-        '"""
+        Для выхода из программы введите 'quit'
+        """
         )
 
         if func_numb == "1":
-            print(u.get_current_time())
+            print(get_current_time())
         elif func_numb == "2":
-            print(u.get_greeting())
+            print(get_greeting())
         elif func_numb == "3":
-            print(u.process_cards(transactions))
+            print(process_cards(transactions))
         elif func_numb == "4":
             try:
                 n = int(input("\nВведите количество N-топ транзакций\n-->"))
@@ -40,18 +45,18 @@ def main() -> None:
             except Exception as e:
                 print(e)
         elif func_numb == "5":
-            print(u.get_currency_rates())
+            print(get_currency_rates())
         elif func_numb == "6":
             tickers = input("Введите тикеры акций через запятую (Пример: MSFT, AAPL, TSLA)")
             tickers_list = tuple(tickers.upper().split(", "))
-            print(u.get_stock_prices("finnhub", tickers_list))
+            print(get_stock_prices("finnhub", tickers_list))
         elif func_numb == "7":
             try:
                 month = input("Введите месяц для расчета кэшбэка (Пример: '2021-12')")
                 limit = int(input("Введите шаг округления (10, 50, 100 и т.д.)"))
                 print(
                     f"""Сумма в инвесткопилку за указанный месяц составила бы
-    {s.investment_bank(month, transactions, limit)}"""
+    {investment_bank(month, transactions, limit)}"""
                 )
             except Exception as e:
                 print(e)
@@ -59,11 +64,11 @@ def main() -> None:
             try:
                 category = input("Введите наименование категории (Пример: Супермаркеты)")
                 target_date = input("Введите дату (Пример: 2021-12-01)")
-                print(r.spending_by_category(transactions, category, target_date))
+                print(spending_by_category(transactions, category, target_date))
             except Exception as e:
                 print(e)
         elif func_numb == "9":
-            print(v.main_page())
+            print(main_page())
         elif func_numb == "quit":
             break
         else:
