@@ -1,5 +1,7 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 from unittest.mock import patch
+
+import pytest
 
 from src.external_api import get_exchange_rates, get_stock_rates_finnhub
 
@@ -77,6 +79,86 @@ def test_successful_response_fh(stock_test_response: dict[str, int]) -> None:
             "previous_close": 148.5,
         }
     ]
+
+
+@pytest.mark.parametrize(
+    "stock_test_response, expected_result",
+    [
+        # Базовый случай для AAPL
+        (
+            {
+                "c": 150.0,  # current price
+                "d": 1.5,  # change
+                "dp": 1.01,  # percent change
+                "h": 152.0,  # high
+                "l": 149.0,  # low
+                "o": 151.0,  # open
+                "pc": 148.5,  # previous close
+            },
+            [
+                {
+                    "ticker": "AAPL",
+                    "current_price": 150.0,
+                    "change": 1.5,
+                    "percent_change": 1.01,
+                    "high": 152.0,
+                    "low": 149.0,
+                    "open": 151.0,
+                    "previous_close": 148.5,
+                }
+            ],
+        ),
+        # Тест для другой акции (MSFT)
+        (
+            {"c": 250.0, "d": -2.5, "dp": -0.99, "h": 255.0, "l": 248.0, "o": 252.0, "pc": 252.5},
+            [
+                {
+                    "ticker": "MSFT",
+                    "current_price": 250.0,
+                    "change": -2.5,
+                    "percent_change": -0.99,
+                    "high": 255.0,
+                    "low": 248.0,
+                    "open": 252.0,
+                    "previous_close": 252.5,
+                }
+            ],
+        ),
+        # Тест с нулевыми значениями
+        (
+            {"c": 0.0, "d": 0.0, "dp": 0.0, "h": 0.0, "l": 0.0, "o": 0.0, "pc": 0.0},
+            [
+                {
+                    "ticker": "TEST",
+                    "current_price": 0.0,
+                    "change": 0.0,
+                    "percent_change": 0.0,
+                    "high": 0.0,
+                    "low": 0.0,
+                    "open": 0.0,
+                    "previous_close": 0.0,
+                }
+            ],
+        ),
+    ],
+    ids=["apple_stock_data", "microsoft_stock_data", "zero_values_data"],
+)
+def test_successful_response_fh_parametrized(
+    stock_test_response: List[Dict[str, float]], expected_result: List[Dict[str, Any]]
+) -> None:
+    """Тест успешного получения данных об акциях"""
+    with patch("requests.get") as mock_get:
+        # Настраиваем mock
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = stock_test_response
+
+        # Мокаем переменные окружения
+        with patch.dict("os.environ", {"FINHUB_API_KEY": "test_key"}):
+            # Получаем тикер из ожидаемого результата
+            ticker = expected_result[0]["ticker"]
+            result = get_stock_rates_finnhub(stock=[ticker])
+
+    assert result == expected_result
 
 
 def test_missing_api_key_fh() -> None:

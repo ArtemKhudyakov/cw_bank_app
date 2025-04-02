@@ -49,11 +49,14 @@ def get_current_time() -> str:
     return time
 
 
-def get_greeting() -> str:
+def get_greeting(time_string: Optional[str] = None) -> str:
     """Возвращает приветствие в зависимости от времени."""
 
-    time_string = get_current_time()
-    date = datetime.strptime(time_string, "%Y-%m-%d %H:%M:%S")
+    if time_string:
+        date = datetime.fromisoformat(time_string)
+    else:
+        time_string = get_current_time()
+        date = datetime.strptime(time_string, "%Y-%m-%d %H:%M:%S")
     hour = date.hour
     if 5 <= hour < 12:
         greeting = "Доброе утро"

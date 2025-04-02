@@ -2,9 +2,17 @@ import json
 import logging
 import os
 import pathlib as p
+from typing import Optional
 
 import src.data_reader as data_reader
-from src.utils import get_currency_rates, get_greeting, get_stock_prices, get_top_transactions, process_cards
+from src.utils import (
+    get_currency_rates,
+    get_current_time,
+    get_greeting,
+    get_stock_prices,
+    get_top_transactions,
+    process_cards
+)
 
 # Получаем имя модуля
 module_name = p.Path(__file__).stem
@@ -28,7 +36,11 @@ file_handler.setFormatter(file_formater)
 logger.addHandler(file_handler)
 
 
-def main_page() -> str:
+def main_page(time_string: Optional[str] = None) -> str:
+    if time_string:
+        time_string = time_string
+    else:
+        time_string = get_current_time()
     """Главная функция, обрабатывающая данные и возвращающая JSON-ответ"""
     # Парсим входные данные
     logger.info("Запуск main_page")
@@ -38,7 +50,7 @@ def main_page() -> str:
         data = data_reader.xlsx_reader("data/operations.xlsx")
 
         response = {
-            "greeting": get_greeting(),
+            "greeting": get_greeting(time_string),
             "cards": process_cards(data),
             "top_transactions": get_top_transactions(data, 5),
             "currency_rates": get_currency_rates(),
@@ -53,5 +65,4 @@ def main_page() -> str:
         logger.critical(f"Критическая ошибка в main_page: {e}")
         return json.dumps({"error": "Internal Server Error"}, ensure_ascii=False, indent=4)
 
-
-print(main_page())
+# print(main_page())

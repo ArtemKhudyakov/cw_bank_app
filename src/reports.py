@@ -86,7 +86,7 @@ def report_to_file(func_or_filename: Optional[Union[Callable, str]] = None) -> C
 def spending_by_category(
     transactions: Union[pd.DataFrame, List[Dict[str, Any]]], category: str, target_date: Optional[str] = None
 ) -> pd.DataFrame:
-    """Возвращает траты по заданной категории за последние 3 месяца.
+    """Возвращает траты по заданной категории за последние 3 месяца с указанной даты.
     Даты форматируются в виде 'DD.MM.YYYY (UTC +3)'"""
 
     logger.info(f"Формирование отчета по категории '{category.capitalize()}'")

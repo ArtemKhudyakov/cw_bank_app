@@ -89,6 +89,58 @@ def test_process_cards_basic(basic_transactions: List[Dict[str, Any]]) -> None:
     assert result[1]["cashback"] == 25
 
 
+@pytest.mark.parametrize(
+    "transactions, expected_results",
+    [
+        # Базовый случай (оригинальный тест)
+        (
+            [
+                {"Номер карты": "12345678", "Сумма операции": -1000, "Бонусы (включая кэшбэк)": 50},
+                {"Номер карты": "12345678", "Сумма операции": -2000, "Бонусы (включая кэшбэк)": 100},
+                {"Номер карты": "98765432", "Сумма операции": -500, "Бонусы (включая кэшбэк)": 25},
+            ],
+            [
+                {"last_digits": "5678", "total_spent": 3000, "cashback": 150},
+                {"last_digits": "5432", "total_spent": 500, "cashback": 25},
+            ],
+        ),
+        # Тест с одной картой
+        (
+            [
+                {"Номер карты": "11112222", "Сумма операции": -100, "Бонусы (включая кэшбэк)": 5},
+                {"Номер карты": "11112222", "Сумма операции": -200, "Бонусы (включая кэшбэк)": 10},
+            ],
+            [
+                {"last_digits": "2222", "total_spent": 300, "cashback": 15},
+            ],
+        ),
+        # Тест с пустым списком транзакций
+        ([], []),
+        # Тест с разными картами без повторений
+        (
+            [
+                {"Номер карты": "55556666", "Сумма операции": -1000, "Бонусы (включая кэшбэк)": 50},
+                {"Номер карты": "77778888", "Сумма операции": -2000, "Бонусы (включая кэшбэк)": 100},
+            ],
+            [
+                {"last_digits": "6666", "total_spent": 1000, "cashback": 50},
+                {"last_digits": "8888", "total_spent": 2000, "cashback": 100},
+            ],
+        ),
+    ],
+)
+def test_process_cards(transactions: List[Dict[str, Any]], expected_results: List[Dict[str, Any]]) -> None:
+    """Параметризованный тест функции process_cards"""
+    result = process_cards(transactions)
+
+    assert len(result) == len(expected_results)
+
+    for res, expected in zip(result, expected_results):
+        assert res["last_digits"] == expected["last_digits"]
+        assert res["total_spent"] == expected["total_spent"]
+        assert res["cashback"] == expected["cashback"]
+
+
 def test_skip_invalid_cards(invalid_cards: List[Dict[str, Any]]) -> None:
     """Тест пропуска невалидных номеров карт"""
 
@@ -112,6 +164,25 @@ def test_positive_amounts_ignored() -> None:
     assert result[0]["total_spent"] == 500
 
 
+@pytest.mark.parametrize(
+    "transactions, expected_total, expected_cashback",
+    [
+        (
+            [
+                {"Номер карты": "11112222", "Сумма операции": -1000, "Бонусы (включая кэшбэк)": 50},
+                {"Номер карты": "11112222", "Сумма операции": 2000, "Бонусы (включая кэшбэк)": 100},
+            ],
+            1000,
+            150,  # Кэшбэк учитывается для всех операций
+        ),
+    ],
+)
+def test_with_cashback(transactions: List[Dict[str, Any]], expected_total: int, expected_cashback: int) -> None:
+    result = process_cards(transactions)
+    assert result[0]["total_spent"] == expected_total
+    assert result[0]["cashback"] == expected_cashback
+
+
 def test_short_card_numbers() -> None:
     """Тест обработки коротких номеров карт"""
     transactions = [
@@ -123,6 +194,61 @@ def test_short_card_numbers() -> None:
 
     assert result[0]["last_digits"] == "123"  # Берется весь номер
     assert result[1]["last_digits"] == "4567"  # Берется весь номер
+
+
+@pytest.mark.parametrize(
+    "transactions, expected_results",
+    [
+        # Короткие номера карт
+        (
+            [
+                {"Номер карты": "123", "Сумма операции": -100},  # 3 цифры
+                {"Номер карты": "4567", "Сумма операции": -200},  # 4 цифры
+                {"Номер карты": "56789", "Сумма операции": -300},  # 5 цифр
+            ],
+            [
+                {"last_digits": "123", "total_spent": 100},
+                {"last_digits": "4567", "total_spent": 200},
+                {"last_digits": "6789", "total_spent": 300},  # Берется 4 последние цифры
+            ],
+        ),
+        # Смешанные длинные и короткие номера
+        (
+            [
+                {"Номер карты": "1234567890123456", "Сумма операции": -400},  # 16 цифр
+                {"Номер карты": "12", "Сумма операции": -500},  # 2 цифры
+                {"Номер карты": "98765432109876543210", "Сумма операции": -600},  # 20 цифр
+            ],
+            [
+                {"last_digits": "3456", "total_spent": 400},
+                {"last_digits": "12", "total_spent": 500},
+                {"last_digits": "3210", "total_spent": 600},
+            ],
+        ),
+        # Пустые/некорректные номера
+        (
+            [
+                {"Номер карты": "", "Сумма операции": -700},  # Пустая строка
+                {"Номер карты": "nan", "Сумма операции": -800},  # Строка 'nan'
+                {"Номер карты": None, "Сумма операции": -900},  # None
+            ],
+            [],  # Должны быть проигнорированы
+        ),
+    ],
+    ids=["short_numbers", "mixed_lengths", "invalid_numbers"],
+)
+def test_card_number_processing(transactions: List[Dict[str, Any]], expected_results: List[Dict[str, Any]]) -> None:
+    """Тест обработки номеров карт разной длины"""
+    result = process_cards(transactions)
+
+    if not expected_results:
+        assert len(result) == 0, "Некорректные номера карт должны игнорироваться"
+    else:
+        assert len(result) == len(expected_results)
+
+        for res, expected in zip(result, expected_results):
+            assert res["last_digits"] == expected["last_digits"]
+            assert res["total_spent"] == expected["total_spent"]
 
 
 def test_non_numeric_cashback() -> None:
@@ -137,16 +263,64 @@ def test_non_numeric_cashback() -> None:
     assert result[0]["cashback"] == 0  # Нечисловой кэшбэк игнорируется
 
 
-def test_returns_correct_number_of_transactions() -> None:
+@pytest.mark.parametrize(
+    "transactions, limit, expected_count",
+    [
+        # Базовый случай - запрашиваем меньше, чем есть
+        (
+            [
+                {"Сумма операции": -100, "Дата операции": "2023-01-01"},
+                {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+                {"Сумма операции": -300, "Дата операции": "2023-01-03"},
+            ],
+            2,
+            2,
+        ),
+        # Запрашиваем больше, чем есть
+        (
+            [
+                {"Сумма операции": -100, "Дата операции": "2023-01-01"},
+                {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+            ],
+            5,
+            2,
+        ),
+        # Запрашиваем ровно столько, сколько есть
+        (
+            [
+                {"Сумма операции": -100, "Дата операции": "2023-01-01"},
+                {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+                {"Сумма операции": -300, "Дата операции": "2023-01-03"},
+            ],
+            3,
+            3,
+        ),
+        # Пустой список транзакций
+        ([], 2, 0),
+        # Лимит 0
+        (
+            [
+                {"Сумма операции": -100, "Дата операции": "2023-01-01"},
+                {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+            ],
+            0,
+            0,
+        ),
+    ],
+    ids=[
+        "limit_less_than_transactions",
+        "limit_more_than_transactions",
+        "limit_equals_transactions",
+        "empty_transactions",
+        "zero_limit",
+    ],
+)
+def test_returns_correct_number_of_transactions(
+    transactions: List[Dict[str, Any]], limit: int, expected_count: int
+) -> None:
     """Проверяет, что функция возвращает правильное количество транзакций"""
-    transactions = [
-        {"Сумма операции": -100, "Дата операции": "2023-01-01"},
-        {"Сумма операции": -200, "Дата операции": "2023-01-02"},
-        {"Сумма операции": -300, "Дата операции": "2023-01-03"},
-    ]
-
-    result = get_top_transactions(transactions, 2)
-    assert len(result) == 2
+    result = get_top_transactions(transactions, limit)
+    assert len(result) == expected_count
 
 
 def test_ignores_positive_amounts() -> None:

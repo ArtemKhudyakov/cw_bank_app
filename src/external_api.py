@@ -164,7 +164,7 @@ def get_stock_rates_finnhub(
         try:
             logger.debug(f"Попытка {attempt + 1} из {max_retries + 1}")
             for ticker in stock:
-                url = f"https://finnhub.io/api/v1/quote?symbol=AAPL&token={API_KEY}"
+                url = f"https://finnhub.io/api/v1/quote?symbol={ticker}&token={API_KEY}"
                 logger.debug(f"Запрос данных для {ticker} по URL: {url}")
                 response = requests.get(url, timeout=timeout)
                 logger.debug(f"Получен ответ: статус {response.status_code}")
