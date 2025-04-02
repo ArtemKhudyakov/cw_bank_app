@@ -65,4 +65,5 @@ def main_page(time_string: Optional[str] = None) -> str:
         logger.critical(f"Критическая ошибка в main_page: {e}")
         return json.dumps({"error": "Internal Server Error"}, ensure_ascii=False, indent=4)
 
+
 # print(main_page())
