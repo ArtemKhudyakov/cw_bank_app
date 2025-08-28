@@ -1,0 +1,436 @@
+from datetime import datetime
+from typing import Any, Dict, List
+from unittest.mock import Mock, patch
+
+import pytest
+
+from src.utils import (
+    get_currency_rates,
+    get_current_time,
+    get_greeting,
+    get_stock_prices,
+    get_top_transactions,
+    process_cards
+)
+
+
+def test_get_current_time_format() -> None:
+    """Тест формата возвращаемого времени"""
+    with patch("src.utils.datetime") as mock_datetime:
+        test_time = datetime(2023, 12, 25, 15, 30, 45)
+        mock_datetime.now.return_value = test_time
+        result = get_current_time()
+        assert result == "2023-12-25 15:30:45"
+
+
+def test_get_current_time_uses_current_time() -> None:
+    """Тест использования текущего времени"""
+    with patch("src.utils.datetime") as mock_datetime:
+        test_time = datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.now.return_value = test_time
+        result = get_current_time()
+        assert "12:00:00" in result
+
+
+def test_greeting_morning() -> None:
+    """Тест для утреннего приветствия (5:00-11:59)"""
+    with patch("src.utils.get_current_time", return_value="2023-01-01 08:30:00"):
+        assert get_greeting() == "Доброе утро"
+
+
+def test_greeting_afternoon() -> None:
+    """Тест для дневного приветствия (12:00-16:59)"""
+    with patch("src.utils.get_current_time", return_value="2023-01-01 14:15:00"):
+        assert get_greeting() == "Добрый день"
+
+
+def test_greeting_evening() -> None:
+    """Тест для вечернего приветствия (17:00-22:59)"""
+    with patch("src.utils.get_current_time", return_value="2023-01-01 19:45:00"):
+        assert get_greeting() == "Добрый вечер"
+
+
+def test_greeting_night() -> None:
+    """Тест для ночного приветствия (23:00-4:59)"""
+    with patch("src.utils.get_current_time", return_value="2023-01-01 03:20:00"):
+        assert get_greeting() == "Доброй ночи"
+
+
+@pytest.mark.parametrize(
+    "time_str, expected",
+    [
+        ("04:59:59", "Доброй ночи"),
+        ("05:00:00", "Доброе утро"),
+        ("11:59:59", "Доброе утро"),
+        ("12:00:00", "Добрый день"),
+        ("16:59:59", "Добрый день"),
+        ("17:00:00", "Добрый вечер"),
+        ("22:59:59", "Добрый вечер"),
+        ("23:00:00", "Доброй ночи"),
+    ],
+)
+def test_greeting_boundary_times(time_str: str, expected: str) -> None:
+    """Параметризованный тест граничных значений"""
+    with patch("src.utils.get_current_time", return_value=f"2023-01-01 {time_str}"):
+        assert get_greeting() == expected, f"Ошибка для времени {time_str}"
+
+
+def test_process_cards_basic(basic_transactions: List[Dict[str, Any]]) -> None:
+    """Тест базовой функциональности"""
+
+    result = process_cards(basic_transactions)
+
+    assert len(result) == 2  # Две уникальные карты
+    assert result[0]["last_digits"] == "5678"
+    assert result[0]["total_spent"] == 3000  # 1000 + 2000
+    assert result[0]["cashback"] == 150  # 50 + 100
+    assert result[1]["last_digits"] == "4321"
+    assert result[1]["total_spent"] == 500
+    assert result[1]["cashback"] == 25
+
+
+@pytest.mark.parametrize(
+    "transactions, expected_results",
+    [
+        # Базовый случай (оригинальный тест)
+        (
+            [
+                {"Номер карты": "12345678", "Сумма операции": -1000, "Бонусы (включая кэшбэк)": 50},
+                {"Номер карты": "12345678", "Сумма операции": -2000, "Бонусы (включая кэшбэк)": 100},
+                {"Номер карты": "98765432", "Сумма операции": -500, "Бонусы (включая кэшбэк)": 25},
+            ],
+            [
+                {"last_digits": "5678", "total_spent": 3000, "cashback": 150},
+                {"last_digits": "5432", "total_spent": 500, "cashback": 25},
+            ],
+        ),
+        # Тест с одной картой
+        (
+            [
+                {"Номер карты": "11112222", "Сумма операции": -100, "Бонусы (включая кэшбэк)": 5},
+                {"Номер карты": "11112222", "Сумма операции": -200, "Бонусы (включая кэшбэк)": 10},
+            ],
+            [
+                {"last_digits": "2222", "total_spent": 300, "cashback": 15},
+            ],
+        ),
+        # Тест с пустым списком транзакций
+        ([], []),
+        # Тест с разными картами без повторений
+        (
+            [
+                {"Номер карты": "55556666", "Сумма операции": -1000, "Бонусы (включая кэшбэк)": 50},
+                {"Номер карты": "77778888", "Сумма операции": -2000, "Бонусы (включая кэшбэк)": 100},
+            ],
+            [
+                {"last_digits": "6666", "total_spent": 1000, "cashback": 50},
+                {"last_digits": "8888", "total_spent": 2000, "cashback": 100},
+            ],
+        ),
+    ],
+)
+def test_process_cards(transactions: List[Dict[str, Any]], expected_results: List[Dict[str, Any]]) -> None:
+    """Параметризованный тест функции process_cards"""
+    result = process_cards(transactions)
+
+    assert len(result) == len(expected_results)
+
+    for res, expected in zip(result, expected_results):
+        assert res["last_digits"] == expected["last_digits"]
+        assert res["total_spent"] == expected["total_spent"]
+        assert res["cashback"] == expected["cashback"]
+
+
+def test_skip_invalid_cards(invalid_cards: List[Dict[str, Any]]) -> None:
+    """Тест пропуска невалидных номеров карт"""
+
+    result = process_cards(invalid_cards)
+
+    assert len(result) == 1  # Только одна валидная карта
+    assert result[0]["last_digits"] == "1234"
+    assert result[0]["total_spent"] == 400
+
+
+def test_positive_amounts_ignored() -> None:
+    """Тест игнорирования положительных сумм"""
+    transactions = [
+        {"Номер карты": "1111222233334444", "Сумма операции": 1000},
+        # Положительная сумма
+        {"Номер карты": "1111222233334444", "Сумма операции": -500},
+    ]
+
+    result = process_cards(transactions)
+
+    assert result[0]["total_spent"] == 500
+
+
+@pytest.mark.parametrize(
+    "transactions, expected_total, expected_cashback",
+    [
+        (
+            [
+                {"Номер карты": "11112222", "Сумма операции": -1000, "Бонусы (включая кэшбэк)": 50},
+                {"Номер карты": "11112222", "Сумма операции": 2000, "Бонусы (включая кэшбэк)": 100},
+            ],
+            1000,
+            150,  # Кэшбэк учитывается для всех операций
+        ),
+    ],
+)
+def test_with_cashback(transactions: List[Dict[str, Any]], expected_total: int, expected_cashback: int) -> None:
+    result = process_cards(transactions)
+    assert result[0]["total_spent"] == expected_total
+    assert result[0]["cashback"] == expected_cashback
+
+
+def test_short_card_numbers() -> None:
+    """Тест обработки коротких номеров карт"""
+    transactions = [
+        {"Номер карты": "123", "Сумма операции": -100},  # Номер короче 4 цифр
+        {"Номер карты": "4567", "Сумма операции": -200},  # Ровно 4 цифры
+    ]
+
+    result = process_cards(transactions)
+
+    assert result[0]["last_digits"] == "123"  # Берется весь номер
+    assert result[1]["last_digits"] == "4567"  # Берется весь номер
+
+
+@pytest.mark.parametrize(
+    "transactions, expected_results",
+    [
+        # Короткие номера карт
+        (
+            [
+                {"Номер карты": "123", "Сумма операции": -100},  # 3 цифры
+                {"Номер карты": "4567", "Сумма операции": -200},  # 4 цифры
+                {"Номер карты": "56789", "Сумма операции": -300},  # 5 цифр
+            ],
+            [
+                {"last_digits": "123", "total_spent": 100},
+                {"last_digits": "4567", "total_spent": 200},
+                {"last_digits": "6789", "total_spent": 300},  # Берется 4 последние цифры
+            ],
+        ),
+        # Смешанные длинные и короткие номера
+        (
+            [
+                {"Номер карты": "1234567890123456", "Сумма операции": -400},  # 16 цифр
+                {"Номер карты": "12", "Сумма операции": -500},  # 2 цифры
+                {"Номер карты": "98765432109876543210", "Сумма операции": -600},  # 20 цифр
+            ],
+            [
+                {"last_digits": "3456", "total_spent": 400},
+                {"last_digits": "12", "total_spent": 500},
+                {"last_digits": "3210", "total_spent": 600},
+            ],
+        ),
+        # Пустые/некорректные номера
+        (
+            [
+                {"Номер карты": "", "Сумма операции": -700},  # Пустая строка
+                {"Номер карты": "nan", "Сумма операции": -800},  # Строка 'nan'
+                {"Номер карты": None, "Сумма операции": -900},  # None
+            ],
+            [],  # Должны быть проигнорированы
+        ),
+    ],
+    ids=["short_numbers", "mixed_lengths", "invalid_numbers"],
+)
+def test_card_number_processing(transactions: List[Dict[str, Any]], expected_results: List[Dict[str, Any]]) -> None:
+    """Тест обработки номеров карт разной длины"""
+    result = process_cards(transactions)
+
+    if not expected_results:
+        assert len(result) == 0, "Некорректные номера карт должны игнорироваться"
+    else:
+        assert len(result) == len(expected_results)
+
+        for res, expected in zip(result, expected_results):
+            assert res["last_digits"] == expected["last_digits"]
+            assert res["total_spent"] == expected["total_spent"]
+
+
+def test_non_numeric_cashback() -> None:
+    """Тест обработки нечислового кэшбэка"""
+    transactions = [
+        {"Номер карты": "1111222233334444", "Сумма операции": -100, "Бонусы (включая кэшбэк)": "10"},  # Строка
+        {"Номер карты": "1111222233334444", "Сумма операции": -200, "Бонусы (включая кэшбэк)": None},  # None
+    ]
+
+    result = process_cards(transactions)
+
+    assert result[0]["cashback"] == 0  # Нечисловой кэшбэк игнорируется
+
+
+@pytest.mark.parametrize(
+    "transactions, limit, expected_count",
+    [
+        # Базовый случай - запрашиваем меньше, чем есть
+        (
+            [
+                {"Сумма операции": -100, "Дата операции": "2023-01-01"},
+                {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+                {"Сумма операции": -300, "Дата операции": "2023-01-03"},
+            ],
+            2,
+            2,
+        ),
+        # Запрашиваем больше, чем есть
+        (
+            [
+                {"Сумма операции": -100, "Дата операции": "2023-01-01"},
+                {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+            ],
+            5,
+            2,
+        ),
+        # Запрашиваем ровно столько, сколько есть
+        (
+            [
+                {"Сумма операции": -100, "Дата операции": "2023-01-01"},
+                {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+                {"Сумма операции": -300, "Дата операции": "2023-01-03"},
+            ],
+            3,
+            3,
+        ),
+        # Пустой список транзакций
+        ([], 2, 0),
+        # Лимит 0
+        (
+            [
+                {"Сумма операции": -100, "Дата операции": "2023-01-01"},
+                {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+            ],
+            0,
+            0,
+        ),
+    ],
+    ids=[
+        "limit_less_than_transactions",
+        "limit_more_than_transactions",
+        "limit_equals_transactions",
+        "empty_transactions",
+        "zero_limit",
+    ],
+)
+def test_returns_correct_number_of_transactions(
+    transactions: List[Dict[str, Any]], limit: int, expected_count: int
+) -> None:
+    """Проверяет, что функция возвращает правильное количество транзакций"""
+    result = get_top_transactions(transactions, limit)
+    assert len(result) == expected_count
+
+
+def test_ignores_positive_amounts() -> None:
+    """Проверяет, что положительные суммы игнорируются"""
+    transactions = [
+        {"Сумма операции": 100, "Дата операции": "2023-01-01"},
+        # Должна быть проигнорирована
+        {"Сумма операции": -200, "Дата операции": "2023-01-02"},
+    ]
+
+    result = get_top_transactions(transactions)
+    assert len(result) == 1
+    assert result[0]["amount"] == 200
+
+
+def test_sorts_by_amount_descending() -> None:
+    """Проверяет сортировку по убыванию суммы"""
+    transactions = [
+        {"Сумма операции": -300, "Дата операции": "2023-01-01"},
+        {"Сумма операции": -100, "Дата операции": "2023-06-07"},
+        {"Сумма операции": -200, "Дата операции": "2023-01-21"},
+    ]
+
+    result = get_top_transactions(transactions, n=3)
+    assert result[0]["amount"] == 300
+    assert result[1]["amount"] == 200
+    assert result[2]["amount"] == 100
+
+
+def test_handles_missing_fields() -> None:
+    """Проверяет обработку отсутствующих полей"""
+    transactions = [{"Сумма операции": -100}]  # Нет даты, категории и описания
+
+    result = get_top_transactions(transactions)[0]
+    assert result["date"] == ""
+    assert result["category"] == ""
+    assert result["description"] == ""
+
+
+def test_default_n_value() -> None:
+    """Проверяет, что по умолчанию возвращается 5 транзакций"""
+    transactions = [{"Сумма операции": -i * 100} for i in range(10)]  # 10 транзакций
+
+    result = get_top_transactions(transactions)  # Без указания n
+    assert len(result) == 5
+
+
+def test_success(mock_api: Mock) -> None:
+    """Тест успешного получения курсов валют"""
+    # Настраиваем мок для возврата тестовых данных
+    mock_api.return_value = [{"currency": "USD", "exchange_rate": 90.5}]
+
+    assert get_currency_rates() == [{"USD": 90.5}]
+    mock_api.assert_called_once_with("RUB", ("USD", "EUR", "CNY"))
+
+
+def test_failure(mock_api: Mock) -> None:
+    """Тест обработки ошибки API"""
+    mock_api.return_value = None
+    assert get_currency_rates() is None
+
+
+def test_get_stock_prices_success(mock_finnhub: Mock) -> None:
+    """Тест успешного получения цен акций через Finnhub."""
+    mock_finnhub.return_value = [
+        {"ticker": "MSFT", "current_price": 250.75},
+        {"ticker": "AAPL", "current_price": 150.50},
+    ]
+
+    result = get_stock_prices()
+
+    expected = [{"MSFT": 250.75}, {"AAPL": 150.50}]
+    assert result == expected
+
+    mock_finnhub.assert_called_once_with(("MSFT", "AAPL", "TSLA"))
+
+
+def test_custom_tickers(mock_finnhub: Mock) -> None:
+    """Тест работы с пользовательским списком тикеров."""
+    mock_finnhub.return_value = [{"ticker": "GOOGL", "current_price": 125.25}]
+
+    result = get_stock_prices(tickers=("GOOGL", "AMZN"))
+    expected = [{"GOOGL": 125.25}]
+
+    assert result == expected
+    mock_finnhub.assert_called_once_with(("GOOGL", "AMZN"))
+
+
+def test_empty_response(mock_finnhub: Mock) -> None:
+    """Тест обработки пустого ответа от API."""
+    mock_finnhub.return_value = []
+
+    result = get_stock_prices()
+    assert result == []
+
+
+def test_malformed_data(mock_finnhub: Mock) -> None:
+    """Тест обработки некорректных данных от API."""
+    mock_finnhub.return_value = [
+        {"wrong_field": "MSFT"},  # Невалидные данные
+        {"ticker": "AAPL"},  # Нет цены
+        {"ticker": "TSLA", "current_price": 700.50},  # Валидные данные
+    ]
+    result = get_stock_prices()
+    assert result
+
+
+def test_default_resource_used(mock_finnhub: Mock) -> None:
+    """Тест использования ресурса по умолчанию (finnhub)."""
+    mock_finnhub.return_value = [{"ticker": "MSFT", "current_price": 250.75}]
+
+    result = get_stock_prices(resource="finnhub")  # Явно указываем ресурс
+    assert len(result) == 1
